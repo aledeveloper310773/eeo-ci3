@@ -1,0 +1,150 @@
+<?php
+class Customer_m extends CI_Model{
+
+	var $table = 'tbl_mstr_customer';
+
+	public function __construct()
+	{
+		parent::__construct();
+		$this->load->database();
+	}
+    var $column_order = array(null,  'tbl_mstr_customer.kode_customer','tbl_mstr_customer.nama_alias',
+    'tbl_mstr_customer.nama_customer',
+    'tbl_mstr_customer.alamat_customer','tbl_mstr_customer.no_telp','tbl_mstr_customer.NPWP',
+    'tbl_mstr_customer.alamat_NPWP','tbl_mstr_customer.nama_pic','tbl_mstr_customer.no_hp_pic',
+    'tbl_mstr_customer.email_pic','tbl_mstr_jabatan.nama_jabatan','mstrjabatan2.nama_jabatan_up_surat',
+    'tbl_mstr_brand.nama_brand');
+    var $column_search = array('tbl_mstr_customer.kode_customer',
+    'tbl_mstr_customer.nama_customer',
+    'tbl_mstr_customer.nama_alias',
+    'tbl_mstr_customer.alamat_customer','tbl_mstr_customer.no_telp','tbl_mstr_customer.NPWP',
+    'tbl_mstr_customer.alamat_NPWP','tbl_mstr_customer.nama_pic','tbl_mstr_customer.no_hp_pic',
+    'tbl_mstr_customer.email_pic','tbl_mstr_jabatan.nama','mstrjabatan2.nama','tbl_mstr_brand.nama_brand');
+    var $order = array('tbl_mstr_customer.nama_customer' => 'asc');
+       
+    private function _get_datatables_query()
+    {
+        // SELECT tbl_mstr_customer.id ,tbl_mstr_customer.kode_customer, tbl_mstr_customer.nama_alias, tbl_mstr_customer.alamat_customer,
+        // tbl_mstr_customer.no_telp,tbl_mstr_customer.NPWP,tbl_mstr_customer.alamat_NPWP, tbl_mstr_customer.nama_pic,
+        // tbl_mstr_customer.no_hp_pic,tbl_mstr_customer.id_jabatan, tbl_mstr_customer.email_pic, tbl_mstr_customer.up_surat,
+        // tbl_mstr_customer.jabatan_up_surat,tbl_mstr_customer.email_up_surat ,
+        // tbl_mstr_jabatan.nama as nama_jabatan ,
+        // mstrjabatan2.nama as nama_jabatan_up_surat 
+        // FROM  tbl_mstr_customer INNER join tbl_mstr_jabatan on tbl_mstr_customer.id_jabatan = tbl_mstr_jabatan.id 
+        // INNER JOIN tbl_mstr_jabatan mstrjabatan2 on tbl_mstr_customer.jabatan_up_surat = mstrjabatan2.id
+
+        $this->db->select('tbl_mstr_customer.id ,tbl_mstr_customer.kode_customer,
+        tbl_mstr_customer.nama_customer, tbl_mstr_customer.nama_alias,
+         tbl_mstr_customer.alamat_customer,tbl_mstr_customer.no_telp,tbl_mstr_customer.NPWP,
+         tbl_mstr_customer.alamat_NPWP, tbl_mstr_customer.nama_pic,
+        tbl_mstr_customer.no_hp_pic,tbl_mstr_customer.id_jabatan, 
+        tbl_mstr_customer.email_pic, tbl_mstr_customer.up_surat,tbl_mstr_customer.jabatan_up_surat,
+         tbl_mstr_customer.email_up_surat,tbl_mstr_jabatan.nama as nama_jabatan,
+         mstrjabatan2.nama as nama_jabatan_up_surat , tbl_mstr_brand.nama_brand');        
+        $this->db->join('tbl_mstr_jabatan','tbl_mstr_customer.id_jabatan= tbl_mstr_jabatan.id');  
+        $this->db->join('tbl_mstr_jabatan mstrjabatan2','tbl_mstr_customer.jabatan_up_surat= mstrjabatan2.id');          
+        $this->db->join('tbl_mstr_brand','tbl_mstr_customer.id_brand= tbl_mstr_brand.id');          
+        $this->db->from('tbl_mstr_customer');
+ 
+        $i = 0;
+     
+        foreach ($this->column_search as $item) // loop column 
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+                 
+                if($i===0) // first loop
+                {
+                    $this->db->group_start(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $this->db->like($item, $_POST['search']['value']);
+                }
+                else
+                {
+                    $this->db->or_like($item, $_POST['search']['value']);
+                }
+ 
+                if(count($this->column_search) - 1 == $i) //last loop
+                    $this->db->group_end(); //close bracket
+            }
+            $i++;
+        }
+         
+        if(isset($_POST['order'])) // here order processing
+        {
+            $this->db->order_by($this->column_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
+        } 
+        else if(isset($this->order))
+        {
+            $order = $this->order;
+            $this->db->order_by(key($order), $order[key($order)]);
+        }
+    }
+ 
+    function get_datatables()
+    {
+        $this->_get_datatables_query();
+        if($_POST['length'] != -1)
+        $this->db->limit($_POST['length'], $_POST['start']);
+        $query = $this->db->get();
+        return $query->result();
+    }
+ 
+    function count_filtered()
+    {
+        $this->_get_datatables_query();
+        $query = $this->db->get();
+        return $query->num_rows();
+    }
+ 
+    public function count_all()
+    {
+        $this->db->from($this->table);
+        return $this->db->count_all_results();
+    }
+ 
+	public function getall()
+	{
+	$this->db->from($this->table);
+	$query=$this->db->get();
+	return $query->result();
+	}
+
+	// public function getall_withinfo()
+	// {
+    //     $this->db->select('bb.nama as nama_bankcabang,rb.id,b.nama as nama_bank,rb.no_rekening');        
+    //     $this->db->join('tbl_mstr_branchbank bb','bb.id= rb.id_branchbank');  
+    //     $this->db->join('tbl_mstr_bank b','bb.id_bank= b.id');          
+    //     $this->db->from('tbl_mstr_rek_bankbranch rb');
+    //     // $this->db->from($this->table);
+	// $query=$this->db->get();
+	// return $query->result();
+	// }
+
+	public function get_by_id($id)
+	{
+		$this->db->from($this->table);
+		$this->db->where('id',$id);
+		$query = $this->db->get();
+
+		return $query->row();
+	}
+
+	public function data_add($data)
+	{
+		$this->db->insert($this->table, $data);
+		return $this->db->insert_id();
+	}
+
+	public function data_update($where, $data)
+	{
+		$this->db->update($this->table, $data, $where);
+		return $this->db->affected_rows();
+	}
+
+	public function data_delete($id)
+	{
+		$this->db->where('id', $id);
+		$this->db->delete($this->table);
+	}
+
+}
